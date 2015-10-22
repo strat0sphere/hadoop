@@ -266,11 +266,18 @@ public class ResourcePolicy {
         double taskDisk = (mapSlots + reduceSlots) * slotDisk + containerDisk;
 
         if (!sufficient || ports.size() < 2) {
+	   double minTaskCpus = slotCpus + containerCpus;
+           double minTaskMem = slotMem + containerMem;
+           double minTaskDisk = slotDisk + containerDisk;
+
           LOG.info(join("\n", Arrays.asList(
               "Declining offer with insufficient resources for a TaskTracker: ",
-              "  cpus: offered " + cpus + " needed at least " + taskCpus,
-              "  mem : offered " + mem + " needed at least " + taskMem,
-              "  disk: offered " + disk + " needed at least " + taskDisk,
+              "  cpus: offered " + cpus + " needed at least " + minTaskCpus,
+              "  mem : offered " + mem + " needed at least " + minTaskMem,
+	      "mapslots: " + mapSlots + " reduce slots: " + reduceSlots,
+	      "slotMem: " + slotMem + " containerMem: " + containerMem,
+	      "neededMapSlots: " + neededMapSlots + " neededReduceSlots: " + neededReduceSlots,
+              "  disk: offered " + disk + " needed at least " + minTaskDisk,
               "  ports: " + (ports.size() < 2
                   ? " less than 2 offered"
                   : " at least 2 (sufficient)"))));

@@ -55,6 +55,13 @@ public class ResourcePolicyVariable extends ResourcePolicy {
         // The remaining slots are allocated for reduces.
         slots -= mapSlots;
         reduceSlots = Math.min(Math.min(slots, reduceSlotsMax), neededReduceSlots);
+
+	// Make sure you get at least one reduce slot to avoid deadlock
+        if (neededReduceSlots > 0 && reduceSlots == 0) {
+          reduceSlots++;
+          mapSlots--;
+        }
+
       }
       return true;
     }
