@@ -77,6 +77,7 @@ public class ResourcePolicy {
     int pendingReduces = 0;
     int runningMaps = 0;
     int runningReduces = 0;
+    int attempts = 0;
     for (JobInProgress progress : jobsInProgress) {
       // JobStatus.pendingMaps/Reduces may return the wrong value on
       // occasion.  This seems to be safer.
@@ -84,8 +85,24 @@ public class ResourcePolicy {
       pendingReduces += scheduler.getPendingTasks(progress.getTasks(TaskType.REDUCE));
       runningMaps += progress.runningMaps();
       runningReduces += progress.runningReduces();
-    }
 
+      attempts = 1;
+      while (pendingReduces == 0 && runningReduces == 0 && attempts < 10)
+       {
+	try{
+		Thread.sleep(1000);
+	}
+	catch(InterruptedException ex) {
+    		Thread.currentThread().interrupt();
+	}
+        pendingReduces += scheduler.getPendingTasks(progress.getTasks(TaskType.REDUCE));
+        runningReduces += progress.runningReduces();
+        attempts++;
+       }
+      //LOG.info("pendingReduces: " + pendingReduces + " - runningReduces:" + runningReduces);
+    }
+	
+      LOG.info("pendingReduces: " + pendingReduces + " - runningReduces:" + runningReduces + " attempts: " + attempts);
     // Mark active (heartbeated) TaskTrackers and compute idle slots.
     int idleMapSlots = 0;
     int idleReduceSlots = 0;
@@ -123,8 +140,7 @@ public class ResourcePolicy {
     // be a nuisance with lower latency applications, such as ad-hoc Hive
     // queries.
     int minimumMapSlots = scheduler.conf.getInt("mapred.mesos.total.map.slots.minimum", 0);
-    int minimumReduceSlots =
-        scheduler.conf.getInt("mapred.mesos.total.reduce.slots.minimum", 0);
+    int minimumReduceSlots = scheduler.conf.getInt("mapred.mesos.total.reduce.slots.minimum", 0);
 
     // Compute how many slots we need to allocate.
     neededMapSlots = Math.max(
@@ -314,6 +330,10 @@ public class ResourcePolicy {
 
         LOG.info("Launching task " + taskId.getValue() + " on "
             + httpAddress.toString() + " with mapSlots=" + mapSlots + " reduceSlots=" + reduceSlots);
+
+
+
+	LOG.info( "neededReduceSlots: "+ neededReduceSlots);
 
         // Add this tracker to Mesos tasks.
         scheduler.mesosTrackers.put(httpAddress, new MesosTracker(httpAddress, taskId,

@@ -61,8 +61,9 @@ public class ResourcePolicyVariable extends ResourcePolicy {
           reduceSlots++;
           mapSlots--;
         }
-
+        
       }
+       LOG.info("  reduce slots: " + reduceSlots + " (needed: " + neededReduceSlots + ") " + " mapSlots " + mapSlots + " (needed: " + neededMapSlots + ")");
       return true;
     }
   }
